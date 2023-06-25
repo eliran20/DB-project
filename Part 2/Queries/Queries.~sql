@@ -1,0 +1,72 @@
+
+--CALCULATING 10% BONUS TO EMPLOYEES THAT SATISFY BONUS REQUIREMENTS.
+select employee_id, first_name, last_name, phone_number, address, city_name, salary as "Salary Before Bonus", salary*1.1 as "Salary After Bonus"
+from employee natural join shop natural join city
+where salary < all (select avg(salary)
+                    from employee)
+      and city_name not in (select city_name
+                            from employee natural join shop natural join city
+                            group by city_name
+                            having avg(salary) > 50)
+order by salary desc;
+    
+-- TOTAL PRICE OF ALL SALES
+select city_name, SUM(PRICE) as "Total Revenue", COUNT(city_name) as "Num of Sales"
+from item natural join product natural join sale natural join shop
+where Datetime >= TO_DATE('01/01/2015', 'dd/mm/yyyy')
+group by city_name
+ORDER BY count(city_name) desc;
+
+-- Total Revenue of each product between 2 inputed dates
+select product_id, name, price, amount_in_stock, sum(price) as "Total Revenue"
+from item natural join product natural join sale
+where datetime between &startdate_input and &enddate_input
+group by product_id, name, price, amount_in_stock
+order by "Total Revenue" desc;
+
+--Percentage of sales from inputed delivery company
+select city_name, ROUND(selected_company / total_companies, 2) as "Sales Percentage"
+from 
+       (select city_name, count(city_name) as selected_company
+       from shop natural join sale natural join delivery
+       where Company = &<name = Delivery_Company list = "'10bis', 'Wolt', 'Private', 'Uber Eats'">
+       group by city_name)
+natural join
+        (select city_name, count(city_name) as total_companies
+        from shop natural join sale natural join delivery
+        group by city_name)
+order by "Sales Percentage" desc;
+   
+--Total wage for all employees over tha past decade
+select employee_id, first_name, last_name, salary, (salary * total_hours) as wage
+from
+       (select employee_id, first_name, last_name, salary, start_datetime, sum(hours) as total_hours
+        from employee natural join shift natural join employee_shift_log
+        group by employee_ID, first_name,last_name, salary, start_datetime)
+where start_datetime >= to_date('01/01/2010', 'dd/mm/yyyy') 
+      and start_datetime <= to_date('01/01/2020', 'dd/mm/yyyy')
+order by wage desc;
+
+-- TOTAL EMPLOYEES IN EACH CITY AND THE AVERAGE SALARY IN EACH CITY
+select city_name, count(employee_id) as "Total Employees", round(avg(salary), 2) as "Average Salary"
+from shop natural join employee natural join city
+group by city_name
+having count(employee_id) >= 35
+order by "Average Salary" desc;
+
+
+--ALL SUPPLIES FROM THE LAST DECADE
+select datetime, first_name , last_name ,phone_number ,product_id, product.name , amount
+from supply natural join supplier natural join product 
+where datetime between date '2010-01-01' and date '2020-01-01'
+order by datetime;
+
+
+ -- ALL EMPLOYEES THAT ARENT SUBSCRIBED TO A CERTAIN PHON COMPANY
+select *
+from employee
+where phone_number not in (select phone_number
+                           from employee
+                           where phone_number like '%058-%')
+order by employee_id;
+ 
